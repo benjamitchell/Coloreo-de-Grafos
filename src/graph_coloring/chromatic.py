@@ -23,6 +23,7 @@ import networkx as nx
 from .annealing import AnnealingResult, simulated_annealing
 from .classical import dsatur
 from .cost import num_colors
+from .exact import k_coloring
 
 
 def max_degree_bound(G: nx.Graph) -> int:
@@ -92,7 +93,8 @@ class ChromaticSearch:
     """Result of :func:`estimate_chromatic_number`."""
 
     lower: int
-    """Proven lower bound (clique number)."""
+    """Proven lower bound: the clique number, raised by the exact search
+    when it proves that no ``(upper - 1)``-coloring exists."""
     upper: int
     """Smallest ``k`` for which a proper ``k``-coloring was found."""
     coloring: dict[Hashable, int]
@@ -111,14 +113,18 @@ def estimate_chromatic_number(
     n_iter: int = 200_000,
     restarts: int = 3,
     seed: int | None = None,
+    exact_node_limit: int | None = 200_000,
     **annealing_kwargs,
 ) -> ChromaticSearch:
     """Squeeze ``chi(G)`` between a clique lower bound and annealing.
 
     Start from the DSATUR coloring (a proven upper bound) and try to find a
     proper ``(k-1)``-coloring by simulated annealing, decreasing ``k`` while
-    it succeeds. Failing to find a coloring does *not* prove none exists,
-    so ``upper`` is only an upper bound unless it meets ``lower``.
+    it succeeds. Failing to find a coloring does *not* prove none exists, so
+    if the bounds still differ an exact backtracking search
+    (:func:`graph_coloring.exact.k_coloring`) tries to settle ``k - 1``
+    within ``exact_node_limit`` search nodes (``0`` disables it). Unless
+    ``lower == upper`` at the end, ``upper`` is only an upper bound.
     """
     lower = clique_lower_bound(G)
     coloring = dsatur(G)
@@ -138,5 +144,14 @@ def estimate_chromatic_number(
             break
         upper, coloring = k, result.coloring
         k -= 1
+
+    while exact_node_limit != 0 and lower < upper:
+        status, exact_coloring = k_coloring(G, upper - 1, exact_node_limit)
+        if status == "infeasible":
+            lower = upper
+        elif status == "found":
+            upper, coloring = upper - 1, exact_coloring
+            continue
+        break
 
     return ChromaticSearch(lower=lower, upper=upper, coloring=coloring, runs=runs)

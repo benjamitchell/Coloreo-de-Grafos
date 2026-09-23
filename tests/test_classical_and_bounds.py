@@ -46,7 +46,7 @@ def test_brooks_bound():
 
 def test_estimate_chromatic_number_small_graphs():
     s = gc.estimate_chromatic_number(nx.petersen_graph(), n_iter=20_000, seed=0)
-    assert (s.lower, s.upper, s.exact) == (2, 3, False)
+    assert (s.lower, s.upper, s.exact) == (3, 3, True)  # clique bound 2, closed by exact search
     assert gc.is_proper(nx.petersen_graph(), s.coloring)
     s = gc.estimate_chromatic_number(nx.complete_graph(7), n_iter=1_000, seed=0)
     assert s.exact and s.upper == 7

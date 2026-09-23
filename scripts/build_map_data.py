@@ -1,6 +1,8 @@
 """Build the map datasets shipped in ``graph_coloring/apps/data``.
 
-Downloads Natural Earth (public domain) boundaries, computes which regions
+Downloads Natural Earth (public domain) boundaries and the communes of the
+Santiago Metropolitan Region (official boundaries from the Biblioteca del
+Congreso Nacional de Chile, via github.com/caracena/chile-geojson), computes which regions
 share a border of positive length (touching at a single point, like the
 US "Four Corners", does not count), simplifies the geometries so the files
 stay small, and writes one GeoJSON per map with the adjacency list stored
@@ -18,14 +20,18 @@ import json
 import urllib.request
 from pathlib import Path
 
+from shapely import make_valid
 from shapely.geometry import box, mapping, shape
 from shapely.ops import unary_union
 
 NE = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/"
 OUT = Path(__file__).resolve().parents[1] / "src" / "graph_coloring" / "apps" / "data"
 CACHE = Path(__file__).resolve().parent / ".cache"
+SANTIAGO = "https://raw.githubusercontent.com/caracena/chile-geojson/master/13.geojson"
 
 # Minimum shared border length (in degrees) for two regions to be adjacent.
+# Borders are measured with a 1e-3 degree buffer, so a single touching point
+# shows up as about 2e-3 degrees; real borders are much longer.
 MIN_BORDER = 0.01
 
 # Natural Earth extends some US states into the Great Lakes, which creates
@@ -33,16 +39,16 @@ MIN_BORDER = 0.01
 WATER_BORDERS = {("Illinois", "Michigan"), ("Michigan", "Minnesota")}
 
 
-def load(name: str) -> dict:
+def load(name: str, url: str | None = None) -> dict:
     CACHE.mkdir(exist_ok=True)
     path = CACHE / name
     if not path.exists():
         print(f"downloading {name} ...")
-        urllib.request.urlretrieve(NE + name, path)
+        urllib.request.urlretrieve(url or NE + name, path)
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def adjacency(geoms: dict[str, object]) -> list[list[str]]:
+def adjacency(geoms: dict[str, object], min_border: float = MIN_BORDER) -> list[list[str]]:
     names = sorted(geoms)
     edges = []
     for i, a in enumerate(names):
@@ -51,17 +57,23 @@ def adjacency(geoms: dict[str, object]) -> list[list[str]]:
             if not ga.buffer(1e-3).intersects(gb):
                 continue
             shared = ga.buffer(1e-3).intersection(gb.boundary).length
-            if shared >= MIN_BORDER and (a, b) not in WATER_BORDERS:
+            if shared >= min_border and (a, b) not in WATER_BORDERS:
                 edges.append([a, b])
     return edges
 
 
 def write(
-    name: str, geoms: dict[str, object], tolerance: float, title: str, min_lon: float = -180
+    name: str,
+    geoms: dict[str, object],
+    tolerance: float,
+    title: str,
+    min_lon: float = -180,
+    source: str = "Natural Earth (public domain), https://www.naturalearthdata.com",
+    min_border: float = MIN_BORDER,
 ) -> None:
     """Write a map. Parts west of ``min_lon`` (remote islands) are dropped
     from the drawing to keep it compact; adjacency uses the full shapes."""
-    edges = adjacency(geoms)
+    edges = adjacency(geoms, min_border)
     features = []
     frame = box(min_lon, -90, 180, 90)
     for region, geom in sorted(geoms.items()):
@@ -76,7 +88,7 @@ def write(
     data = {
         "type": "FeatureCollection",
         "name": title,
-        "source": "Natural Earth (public domain), https://www.naturalearthdata.com",
+        "source": source,
         "adjacency": edges,
         "features": features,
     }
@@ -128,6 +140,20 @@ def admin1(
     write(name, geoms, tolerance, title, min_lon)
 
 
+def santiago() -> None:
+    data = load("santiago_13.geojson", SANTIAGO)
+    geoms = {f["properties"]["Comuna"]: make_valid(shape(f["geometry"])) for f in data["features"]}
+    write(
+        "santiago_communes",
+        geoms,
+        0.002,
+        "Communes of the Santiago Metropolitan Region",
+        source="Biblioteca del Congreso Nacional de Chile, via github.com/caracena/chile-geojson",
+        # communes are small: keep borders from ~0.45 km, drop 4-way corners
+        min_border=0.004,
+    )
+
+
 if __name__ == "__main__":
     south_america()
     # min_lon drops Easter Island and the Juan Fernández Islands
@@ -139,3 +165,4 @@ if __name__ == "__main__":
         0.03,
         exclude={"Alaska", "Hawaii", "District of Columbia"},
     )
+    santiago()

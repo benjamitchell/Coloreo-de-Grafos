@@ -76,7 +76,7 @@ def test_maps_are_planar_with_expected_chromatic_number(name, regions, chi):
     assert nx.check_planarity(G)[0]
     assert set(m.geometries) == set(G)
     assert gc.simulated_annealing(G, chi, 100_000, seed=0).solved
-    assert not gc.simulated_annealing(G, chi - 1, 100_000, seed=0).solved
+    assert gc.k_coloring(G, chi - 1)[0] == "infeasible"  # chi is proven, not just observed
 
 
 def test_map_adjacency_facts():
@@ -89,6 +89,12 @@ def test_map_adjacency_facts():
     assert us.has_edge("Utah", "Arizona")
     assert not us.has_edge("Utah", "New Mexico")  # Four Corners: a point, not a border
     assert not us.has_edge("Michigan", "Illinois")  # only across Lake Michigan
+    stgo = maps.load_map("santiago_communes").graph
+    assert stgo.has_edge("Santiago", "Providencia")
+    assert not stgo.has_edge("Renca", "Santiago")  # they only meet at a corner
+    wheel = ["Maipú", "Padre Hurtado", "Peñaflor", "Talagante", "San Bernardo"]
+    assert set(stgo.adj["Calera de Tango"]) == set(wheel)
+    assert nx.is_isomorphic(stgo.subgraph(wheel), nx.cycle_graph(5))
     cl = maps.load_map("chile_regions").graph
     assert nx.is_connected(cl)
     assert cl.degree("Arica y Parinacota") == 1

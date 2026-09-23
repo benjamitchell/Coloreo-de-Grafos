@@ -182,12 +182,12 @@ def fig_phase_transition():
 
 def fig_maps():
     print("maps")
-    fig, axes = plt.subplots(1, 3, figsize=(15, 6.5), width_ratios=[1.1, 0.8, 1.6])
-    for ax, name in zip(axes, maps.MAPS, strict=True):
+    fig, axes = plt.subplots(1, 2, figsize=(10, 6.5), width_ratios=[1.1, 0.8])
+    for ax, name in zip(axes, ("south_america", "chile_regions"), strict=True):
         m = maps.load_map(name)
         s = gc.estimate_chromatic_number(m.graph, seed=0)
         is_chile = name == "chile_regions"
-        labels = maps.CHILE_SHORT_NAMES if is_chile else name == "south_america"
+        labels = maps.CHILE_SHORT_NAMES if is_chile else True
         maps.plot_map(
             m,
             s.coloring,
@@ -200,9 +200,55 @@ def fig_maps():
     save(fig, "maps.png")
 
 
+GREATER_SANTIAGO = (-70.86, -70.47, -33.66, -33.31)
+
+
+def fig_santiago():
+    print("santiago")
+    from matplotlib.patches import Rectangle
+
+    m = maps.load_map("santiago_communes")
+    s = gc.estimate_chromatic_number(m.graph, seed=0)
+    x0, x1, y0, y1 = GREATER_SANTIAGO
+    inside = {
+        r
+        for r, g in m.geometries.items()
+        if x0 <= maps._label_point(g)[0] <= x1 and y0 <= maps._label_point(g)[1] <= y1
+    }
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(15, 7.5), width_ratios=[1, 1.15])
+    maps.plot_map(
+        m,
+        s.coloring,
+        ax=a1,
+        labels={r: "" for r in inside},
+        min_label_area=0.012,
+        title=f"Santiago Metropolitan Region: {len(m.graph)} communes, {s.upper} colors",
+    )
+    a1.add_patch(
+        Rectangle((x0, y0), x1 - x0, y1 - y0, fill=False, ec=INK, lw=1.2, ls="--", zorder=3)
+    )
+    maps.plot_map(
+        m,
+        s.coloring,
+        ax=a2,
+        labels=maps.SANTIAGO_SHORT_NAMES,
+        extent=GREATER_SANTIAGO,
+        fontsize=6.5,
+        title="Greater Santiago",
+        label_offsets={
+            "San Joaquín": (0.012, 0.0),
+            "San Miguel": (-0.006, 0.0),
+            "La Granja": (0.008, 0.0),
+            "San Ramón": (-0.004, -0.004),
+        },
+    )
+    save(fig, "santiago.png")
+    print(f"    chi = {s.upper}, proven: {s.exact}")
+
+
 def fig_map_gif():
     print("map gif")
-    m = maps.load_map("us_states")
+    m = maps.load_map("santiago_communes")
     G = m.graph
     rng = random.Random(1)
     coloring = gc.random_coloring(G, 4, rng)
@@ -211,7 +257,7 @@ def fig_map_gif():
     for i in range(n_frames):
         cost = gc.conflicts(G, coloring)
         T = T0 * (T1 / T0) ** (i / (n_frames - 1))
-        fig, ax = plt.subplots(figsize=(7, 4.2))
+        fig, ax = plt.subplots(figsize=(6, 5))
         maps.plot_map(m, coloring, ax=ax, title=f"4 colors · T = {T:.2f} · H(x) = {cost}")
         buf = io.BytesIO()
         fig.savefig(buf, format="png", dpi=100, facecolor="white")
@@ -230,7 +276,7 @@ def fig_map_gif():
             stop_when_solved=False,
         )
         coloring = res.final_coloring  # the chain's state, not the best one
-    path = FIG / "us_map_annealing.gif"
+    path = FIG / "santiago_annealing.gif"
     frames[0].save(path, save_all=True, append_images=frames[1:], duration=300, loop=0)
     print(f"  wrote {path.relative_to(ROOT)} ({len(frames)} frames)")
 
@@ -347,16 +393,18 @@ def fig_timetable():
 def benchmark_table():
     print("benchmarks")
     rows = [
-        "| Graph | n | m | ω (clique) | Greedy | DSATUR | Annealing | Known χ |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|",
+        "| Graph | n | m | ω (clique) | Greedy | DSATUR | Annealing | Proof of χ | Known χ |",
+        "|---|---:|---:|---:|---:|---:|---:|:---:|---:|",
     ]
     for name in benchmarks.KNOWN:
         G, chi = benchmarks.load(name)
         s = gc.estimate_chromatic_number(G, n_iter=500_000, restarts=3, seed=0)
+        omega = gc.clique_lower_bound(G)
+        how = "clique" if omega == s.upper else "exact search" if s.exact else "no"
         rows.append(
-            f"| `{name}` | {G.number_of_nodes()} | {G.number_of_edges()} | {s.lower} | "
+            f"| `{name}` | {G.number_of_nodes()} | {G.number_of_edges()} | {omega} | "
             f"{gc.num_colors(gc.greedy(G))} | {gc.num_colors(gc.dsatur(G))} | "
-            f"**{s.upper}** | {chi} |"
+            f"**{s.upper}** | {how} | {chi} |"
         )
     text = "\n".join(rows) + "\n"
     (ROOT / "docs" / "benchmarks.md").write_text(text, encoding="utf-8")
@@ -368,6 +416,7 @@ FIGURES = {
     "trace": fig_trace,
     "phase": fig_phase_transition,
     "maps": fig_maps,
+    "santiago": fig_santiago,
     "gif": fig_map_gif,
     "sudoku": fig_sudoku,
     "frequency": fig_frequency,

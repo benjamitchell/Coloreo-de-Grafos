@@ -12,6 +12,7 @@ from .chromatic import (
 )
 from .classical import HEURISTICS, dsatur, greedy, smallest_last, welsh_powell
 from .cost import conflicting_edges, conflicts, delta_recolor, is_proper, num_colors
+from .exact import chromatic_number, k_coloring
 from .schedules import Constant, Geometric, Linear, Logarithmic, geometric_for
 
 __all__ = [
@@ -23,6 +24,7 @@ __all__ = [
     "Linear",
     "Logarithmic",
     "brooks_bound",
+    "chromatic_number",
     "clique_lower_bound",
     "conflicting_edges",
     "conflicts",
@@ -33,6 +35,7 @@ __all__ = [
     "geometric_for",
     "greedy",
     "is_proper",
+    "k_coloring",
     "max_degree_bound",
     "num_colors",
     "random_coloring",

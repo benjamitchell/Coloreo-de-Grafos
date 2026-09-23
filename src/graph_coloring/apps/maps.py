@@ -13,6 +13,10 @@ Bundled maps (built from Natural Earth by ``scripts/build_map_data.py``):
 * ``"chile_regions"``: the 16 regions of Chile. Needs only 3 colors: the
   map is essentially a path, except for the triangle Valparaíso-Santiago-
   O'Higgins.
+* ``"santiago_communes"``: the 52 communes of the Santiago Metropolitan
+  Region (boundaries from the Biblioteca del Congreso Nacional de Chile).
+  Needs 4 colors: Calera de Tango is surrounded by the 5-cycle Maipú-Padre
+  Hurtado-Peñaflor-Talagante-San Bernardo.
 * ``"us_states"``: the 48 contiguous US states. Needs 4 colors (Nevada is
   surrounded by a 5-cycle of states).
 """
@@ -28,7 +32,7 @@ import networkx as nx
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
 
-MAPS = ("south_america", "chile_regions", "us_states")
+MAPS = ("south_america", "chile_regions", "santiago_communes", "us_states")
 
 # Short labels for plotting the Chilean regions.
 CHILE_SHORT_NAMES = {
@@ -36,6 +40,19 @@ CHILE_SHORT_NAMES = {
     "Libertador General Bernardo O'Higgins": "O'Higgins",
     "Magallanes y Antártica Chilena": "Magallanes",
     "Región Metropolitana de Santiago": "Metropolitana",
+}
+
+# Short labels for the densest communes of Greater Santiago.
+SANTIAGO_SHORT_NAMES = {
+    "Pedro Aguirre Cerda": "P. A. Cerda",
+    "Estación Central": "Est. Central",
+    "Independencia": "Indep.",
+    "Quinta Normal": "Q. Normal",
+    "San Joaquín": "S. Joaquín",
+    "San Miguel": "S. Miguel",
+    "San Ramón": "S. Ramón",
+    "La Cisterna": "La Cisterna",
+    "Isla de Maipo": "Isla de Maipo",
 }
 
 # Categorical palette. The first four colors (enough for any map) stay
@@ -111,14 +128,21 @@ def plot_map(
     title: str | None = None,
     min_label_area: float = 0.0,
     callouts: bool = False,
+    extent: tuple[float, float, float, float] | None = None,
+    fontsize: float = 7,
+    label_offsets: dict[str, tuple[float, float]] | None = None,
 ) -> plt.Axes:
     """Draw ``m`` with regions filled by ``coloring``.
 
-    ``labels`` may be ``True`` (region names) or a dict of custom labels.
+    ``labels`` may be ``True`` (region names) or a dict of custom labels;
+    regions mapped to ``""`` are left unlabelled.
     Regions smaller than ``min_label_area`` (squared degrees) are left
     unlabelled. With ``callouts=True`` labels go in a column to the right
     of the map, joined to their region by a leader line; this suits long,
-    narrow maps such as Chile. With ``conflicts=True`` borders between
+    narrow maps such as Chile. ``extent=(xmin, xmax, ymin, ymax)`` zooms in
+    and labels only the regions whose label point falls inside.
+    ``label_offsets`` nudges individual labels by ``(dx, dy)`` degrees. With
+    ``conflicts=True`` borders between
     same-colored neighbours are marked with a red line.
     """
     if ax is None:
@@ -134,6 +158,7 @@ def plot_map(
     )
 
     points = {region: _label_point(g) for region, g in m.geometries.items()}
+    offsets = label_offsets or {}
     if coloring is not None and conflicts:
         for u, v in m.graph.edges:
             if coloring[u] == coloring[v]:
@@ -146,6 +171,14 @@ def plot_map(
             r
             for r in points
             if max(abs(_signed_area(ring)) for ring in _polygons(m.geometries[r])) >= min_label_area
+            and names.get(r, r) != ""
+            and (
+                extent is None
+                or (
+                    extent[0] <= points[r][0] <= extent[1]
+                    and extent[2] <= points[r][1] <= extent[3]
+                )
+            )
         ]
         if callouts:
             ax.autoscale_view()
@@ -169,15 +202,21 @@ def plot_map(
             for region in shown:
                 ax.annotate(
                     names.get(region, region),
-                    points[region],
+                    (
+                        points[region][0] + offsets.get(region, (0, 0))[0],
+                        points[region][1] + offsets.get(region, (0, 0))[1],
+                    ),
                     ha="center",
                     va="center",
-                    fontsize=7,
+                    fontsize=fontsize,
                     zorder=4,
                     bbox=box,
                 )
 
     ax.autoscale_view()
+    if extent is not None:
+        ax.set_xlim(extent[0], extent[1])
+        ax.set_ylim(extent[2], extent[3])
     ax.set_aspect("equal")
     ax.axis("off")
     if title is not None:

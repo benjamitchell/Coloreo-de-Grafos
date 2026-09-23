@@ -14,7 +14,7 @@ cost is updated incrementally (~80× faster), and every claim below comes
 from a script in this repository.
 
 <p align="center">
-  <img src="docs/figures/us_map_annealing.gif" alt="Simulated annealing 4-coloring the map of the contiguous United States; conflicts shown as red lines disappear as the temperature drops" width="600">
+  <img src="docs/figures/santiago_annealing.gif" alt="Simulated annealing 4-coloring the 52 communes of the Santiago Metropolitan Region; conflicts shown as red lines disappear as the temperature drops" width="520">
 </p>
 
 ## The problem
@@ -84,29 +84,33 @@ Running 30,000 iterations takes 5.7 s with the original code and 0.07 s now.
 `estimate_chromatic_number` traps $\chi(G)$ between a **lower bound**, the
 clique number $\omega(G)$, and an **upper bound** that starts from DSATUR
 and is then pushed down by annealing with $k - 1, k - 2, \dots$ colors until
-it fails. When the bounds meet, $\chi(G)$ is proven. Also included: greedy,
-Welsh–Powell, smallest-last and DSATUR colorings, and the $\Delta + 1$,
-Brooks and degeneracy bounds.
+it fails. Annealing can find colorings but never prove that none exists, so
+when a gap remains an **exact backtracking search** (DSATUR branching with
+forward checking) tries to show that $k - 1$ colors are impossible. When the
+bounds meet, $\chi(G)$ is proven. Also included: greedy, Welsh–Powell,
+smallest-last and DSATUR colorings, and the $\Delta + 1$, Brooks and
+degeneracy bounds.
 
 These DIMACS benchmark graphs are generated in code, so they need no
 downloads, and their chromatic numbers are known:
 
-| Graph | n | m | ω (clique) | Greedy | DSATUR | Annealing | Known χ |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| `myciel3` | 11 | 20 | 2 | 4 | 4 | **4** | 4 |
-| `myciel4` | 23 | 71 | 2 | 5 | 5 | **5** | 5 |
-| `myciel5` | 47 | 236 | 2 | 6 | 6 | **6** | 6 |
-| `myciel6` | 95 | 755 | 2 | 7 | 7 | **7** | 7 |
-| `queen5_5` | 25 | 160 | 5 | 8 | 5 | **5** | 5 |
-| `queen6_6` | 36 | 290 | 6 | 11 | 9 | **7** | 7 |
-| `queen7_7` | 49 | 476 | 7 | 10 | 11 | **7** | 7 |
-| `queen8_8` | 64 | 728 | 8 | 13 | 12 | **9** | 9 |
-| `queen8_12` | 96 | 1368 | 12 | 15 | 14 | **12** | 12 |
+| Graph | n | m | ω (clique) | Greedy | DSATUR | Annealing | Proof of χ | Known χ |
+|---|---:|---:|---:|---:|---:|---:|:---:|---:|
+| `myciel3` | 11 | 20 | 2 | 4 | 4 | **4** | exact search | 4 |
+| `myciel4` | 23 | 71 | 2 | 5 | 5 | **5** | exact search | 5 |
+| `myciel5` | 47 | 236 | 2 | 6 | 6 | **6** | no | 6 |
+| `myciel6` | 95 | 755 | 2 | 7 | 7 | **7** | no | 7 |
+| `queen5_5` | 25 | 160 | 5 | 8 | 5 | **5** | clique | 5 |
+| `queen6_6` | 36 | 290 | 6 | 11 | 9 | **7** | exact search | 7 |
+| `queen7_7` | 49 | 476 | 7 | 10 | 11 | **7** | clique | 7 |
+| `queen8_8` | 64 | 728 | 8 | 13 | 12 | **9** | no | 9 |
+| `queen8_12` | 96 | 1368 | 12 | 15 | 14 | **12** | clique | 12 |
 
 Annealing reaches the known $\chi$ on every instance and beats DSATUR by up
 to 4 colors on the queen graphs. The Mycielski graphs are triangle-free
 ($\omega = 2$) yet need up to 7 colors, a reminder that the clique bound
-can be arbitrarily weak.
+can be arbitrarily weak; the exact search closes that gap on the smaller
+ones, while on the largest it runs out of budget and says so ("no").
 
 ### A phase transition
 
@@ -153,20 +157,30 @@ print(sudoku.to_string(result.grid))
 ### Maps
 
 Regions are nodes, and two regions are adjacent when they share a border of
-positive length. Touching at a single point, as at the US Four Corners,
-does not count. The **Four Color Theorem** guarantees that 4 colors always
-suffice. The borders are computed from [Natural Earth](https://www.naturalearthdata.com)
-polygons by [`scripts/build_map_data.py`](scripts/build_map_data.py).
+positive length. Touching at a single point, as where four communes meet at
+a corner, does not count. The **Four Color Theorem** guarantees that 4
+colors always suffice. The borders are computed from official polygons
+([Natural Earth](https://www.naturalearthdata.com) for countries and
+regions, the [Biblioteca del Congreso Nacional](https://www.bcn.cl) for
+communes) by [`scripts/build_map_data.py`](scripts/build_map_data.py).
 
-<p align="center"><img src="docs/figures/maps.png" alt="South America and the contiguous United States colored with 4 colors, and the regions of Chile with 3"></p>
+<p align="center"><img src="docs/figures/santiago.png" alt="The 52 communes of the Santiago Metropolitan Region colored with 4 colors, with a zoom on Greater Santiago"></p>
+
+**The 52 communes of the Santiago Metropolitan Region need 4 colors**, and
+this is proven, not just observed: the map has no four mutually adjacent
+communes, but **Calera de Tango** is surrounded by the 5-cycle Maipú,
+Padre Hurtado, Peñaflor, Talagante, San Bernardo. Its neighbours alone
+need 3 colors (an odd cycle) and it must differ from all of them. The exact
+search confirms that no 3-coloring exists.
+
+<p align="center"><img src="docs/figures/maps.png" width="640" alt="South America colored with 4 colors and the regions of Chile with 3"></p>
 
 * **South America needs 4 colors**: Argentina, Bolivia, Brazil and Paraguay
   all border each other (a $K_4$).
-* **Chile needs only 3**: the regions form a path, except for the triangle
-  Valparaíso, Metropolitana, O'Higgins.
-* **The US needs 4**: Nevada is surrounded by a 5-cycle
-  (California, Oregon, Idaho, Utah, Arizona), and an odd wheel is not
-  3-colorable.
+* **Chile's 16 regions need only 3**: the regions form a path, except for
+  the triangle Valparaíso, Metropolitana, O'Higgins.
+* The 48 contiguous **US states** are also included (4 colors: Nevada sits
+  inside a 5-cycle, just like Calera de Tango).
 
 ### Radio frequency assignment
 
@@ -211,7 +225,9 @@ result.solved, result.solved_at        # (True, ...)
 gc.is_proper(G, result.coloring)       # True
 
 search = gc.estimate_chromatic_number(G, seed=0)
-search.lower, search.upper             # clique bound and best k found
+search.lower, search.upper             # proven lower bound and best k found
+
+gc.chromatic_number(nx.petersen_graph())   # 3, by exact search
 
 gc.simulated_annealing(G, 7, schedule=gc.Geometric(T0=1.0, alpha=0.99999))
 ```
@@ -226,7 +242,8 @@ src/graph_coloring/
     annealing.py     simulated annealing with incremental updates
     schedules.py     cooling schedules
     classical.py     greedy, Welsh–Powell, smallest-last, DSATUR
-    chromatic.py     bounds on χ(G) and the annealing search
+    exact.py         exact k-colorability by backtracking
+    chromatic.py     bounds on χ(G) and the annealing + exact search
     benchmarks.py    DIMACS queen and Mycielski graphs
     apps/            sudoku, maps (+ data), frequency, timetabling
 scripts/             map data builder, figure generator
