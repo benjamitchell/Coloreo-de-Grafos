@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "graph-coloring"
+version = "1.0.0"
+description = "Graph coloring by simulated annealing, with classical baselines and applications (Sudoku, maps, frequency assignment, timetabling)."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "benjamitchell" }]
+dependencies = ["networkx>=3.0", "numpy>=1.24", "matplotlib>=3.7"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "ruff>=0.5", "nbformat", "nbconvert", "ipykernel"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = ["legacy"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "NPY"]
+
+[tool.setuptools.package-data]
+"graph_coloring.apps" = ["data/*.geojson"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["graph_coloring"]
