@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Coloring by Cooling</title>
+<meta name="description" content="Simulated annealing colors maps and solves Sudokus live in your browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page">
+  <header class="masthead">
+    <div class="brand">
+      <h1>Coloring by Cooling</h1>
+      <p class="thesis">Simulated annealing, live in your browser. Neighbours must get different colors;
+        <span class="mono">H(x)</span> counts the pairs that don't. Heat lets the search escape dead ends,
+        cooling lets it settle on a solution.</p>
+    </div>
+    <nav class="modes" role="tablist" aria-label="Puzzle">
+      <button role="tab" id="tab-maps" aria-selected="true" aria-controls="panel-maps">Maps</button>
+      <button role="tab" id="tab-sudoku" aria-selected="false" aria-controls="panel-sudoku">Sudoku</button>
+    </nav>
+  </header>
+
+  <main class="workbench">
+    <section class="stage" aria-live="off">
+      <div id="panel-maps" role="tabpanel" aria-labelledby="tab-maps">
+        <div class="stage-head">
+          <h2 id="map-title">Santiago communes</h2>
+          <p id="map-meta" class="meta"></p>
+        </div>
+        <div class="map-frame">
+          <svg id="map" role="img" aria-labelledby="map-title"></svg>
+          <p id="map-loading" class="loading">Loading map…</p>
+        </div>
+        <p id="map-note" class="note"></p>
+      </div>
+
+      <div id="panel-sudoku" role="tabpanel" aria-labelledby="tab-sudoku" hidden>
+        <div class="stage-head">
+          <h2>Sudoku as a 9-coloring</h2>
+          <p class="meta">81 cells, 810 edges: cells in the same row, column or box are neighbours. Clues are fixed colors.</p>
+        </div>
+        <div id="sudoku" class="sudoku" role="grid" aria-label="Sudoku grid"></div>
+        <p class="note" id="sudoku-note">Click a cell and type 1–9 to edit, or paste an 81-character puzzle (use . or 0 for blanks).</p>
+      </div>
+    </section>
+
+    <aside class="rail">
+      <div class="readout">
+        <div class="h-value">
+          <span class="label">Conflicts <span class="mono">H(x)</span></span>
+          <output id="h-now" class="big mono">–</output>
+        </div>
+        <span id="status" class="chip" data-state="idle">Ready</span>
+      </div>
+
+      <div class="thermo" aria-label="Temperature">
+        <div class="thermo-head"><span class="label">Temperature <span class="mono">T</span></span><output id="t-now" class="mono">–</output></div>
+        <div class="thermo-track"><div id="t-marker" class="thermo-marker"></div></div>
+        <div class="thermo-scale mono"><span>0.02 cold</span><span>hot 2.0</span></div>
+      </div>
+
+      <canvas id="spark" class="spark" height="70" aria-label="H(x) over time"></canvas>
+
+      <dl class="stats mono">
+        <div><dt>moves</dt><dd id="moves">0</dd></div>
+        <div><dt id="restarts-label">reheats</dt><dd id="restarts">0</dd></div>
+        <div><dt>best H</dt><dd id="best">–</dd></div>
+      </dl>
+
+      <div class="controls">
+        <div class="row">
+          <button id="run" class="primary">Start</button>
+          <button id="reset">Shuffle</button>
+        </div>
+        <label class="field" for="speed"><span>Speed <output id="speed-out" class="mono"></output></span>
+          <input id="speed" type="range" min="0" max="100" value="35"></label>
+        <label class="field check" for="auto-t"><input id="auto-t" type="checkbox" checked> Automatic cooling</label>
+        <label class="field" for="temp"><span>Fixed temperature <output id="temp-out" class="mono"></output></span>
+          <input id="temp" type="range" min="0" max="100" value="55" disabled></label>
+      </div>
+
+      <div id="controls-maps" class="controls">
+        <label class="field" for="map-select"><span>Map</span>
+          <select id="map-select">
+            <option value="santiago_communes">Santiago communes (52)</option>
+            <option value="chile_regions">Regions of Chile (16)</option>
+            <option value="south_america">South America (13)</option>
+            <option value="us_states">Contiguous US (48)</option>
+            <option value="custom" hidden>Your map</option>
+          </select></label>
+        <div class="field"><span>Colors <span class="mono">k</span></span>
+          <div class="seg" role="radiogroup" aria-label="Number of colors" id="k-group">
+            <button role="radio" data-k="3">3</button>
+            <button role="radio" data-k="4" aria-checked="true">4</button>
+            <button role="radio" data-k="5">5</button>
+            <button role="radio" data-k="6">6</button>
+          </div></div>
+        <label class="field check" for="labels"><input id="labels" type="checkbox"> Show names</label>
+        <button id="zoom" hidden>Zoom to Greater Santiago</button>
+        <label class="upload" for="upload">Load your own GeoJSON
+          <input id="upload" type="file" accept=".geojson,.json,application/geo+json,application/json"></label>
+        <p class="fine">Polygons that share a border segment become neighbours. Works best with maps whose borders share vertices.</p>
+      </div>
+
+      <div id="controls-sudoku" class="controls" hidden>
+        <div class="field"><span>Examples</span>
+          <div class="seg" id="presets">
+            <button data-p="easy">Easy</button>
+            <button data-p="medium">Medium</button>
+            <button data-p="hard">Hardest</button>
+          </div></div>
+        <label class="field check" for="propagate"><input id="propagate" type="checkbox" checked> Fill forced cells first</label>
+        <button id="clear">Clear grid</button>
+        <p class="fine">Moves swap two free cells inside one 3×3 box (Lewis, 2007), so boxes never clash;
+          only row and column conflicts count. A run restarts after 1M moves.</p>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="foot">
+    <p>Part of <a href="https://github.com/benjamitchell/Coloreo-de-Grafos">Coloreo-de-Grafos</a>, a graph coloring library in Python.
+      Map data: Biblioteca del Congreso Nacional de Chile and Natural Earth.</p>
+  </footer>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
