@@ -230,13 +230,13 @@ import graph_coloring as gc
 G = nx.erdos_renyi_graph(100, 0.2, seed=1)
 
 result = gc.simulated_annealing(G, k=7, n_iter=500_000, seed=0)
-result.solved, result.solved_at        # (True, ...)
-gc.is_proper(G, result.coloring)       # True
+result.solved, result.solved_at  # (True, ...)
+gc.is_proper(G, result.coloring)  # True
 
 search = gc.estimate_chromatic_number(G, seed=0)
-search.lower, search.upper             # proven lower bound and best k found
+search.lower, search.upper  # proven lower bound and best k found
 
-gc.chromatic_number(nx.petersen_graph())   # 3, by exact search
+gc.chromatic_number(nx.petersen_graph())  # 3, by exact search
 
 gc.simulated_annealing(G, 7, schedule=gc.Geometric(T0=1.0, alpha=0.99999))
 ```
