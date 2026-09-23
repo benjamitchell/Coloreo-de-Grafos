@@ -180,70 +180,39 @@ def fig_phase_transition():
     save(fig, "phase_transition.png")
 
 
+# Communes left unlabelled on the Santiago panel: the dense urban core, plus
+# a few small ones where names would collide.
+SANTIAGO_UNLABELLED = {"El Monte", "Isla de Maipo", "Padre Hurtado", "Peñaflor", "Talagante"}
+
+
 def fig_maps():
     print("maps")
-    fig, axes = plt.subplots(1, 2, figsize=(10, 6.5), width_ratios=[1.1, 0.8])
-    for ax, name in zip(axes, ("south_america", "chile_regions"), strict=True):
+    fig, axes = plt.subplots(1, 3, figsize=(16, 7), width_ratios=[1.1, 0.75, 1.25])
+    for ax, name in zip(axes, ("south_america", "chile_regions", "santiago_communes"), strict=True):
         m = maps.load_map(name)
         s = gc.estimate_chromatic_number(m.graph, seed=0)
-        is_chile = name == "chile_regions"
-        labels = maps.CHILE_SHORT_NAMES if is_chile else True
-        maps.plot_map(
-            m,
-            s.coloring,
-            ax=ax,
-            labels=labels,
-            title=f"{m.title}: {s.upper} colors",
-            min_label_area=0.0 if is_chile else 12.0,
-            callouts=is_chile,
+        options = {
+            "south_america": {"labels": True, "min_label_area": 12.0},
+            "chile_regions": {"labels": maps.CHILE_SHORT_NAMES, "callouts": True},
+            "santiago_communes": {
+                "labels": {r: "" for r in SANTIAGO_UNLABELLED},
+                "min_label_area": 0.012,
+            },
+        }[name]
+        title = "Santiago communes" if name == "santiago_communes" else m.title
+        maps.plot_map(m, s.coloring, ax=ax, **options)
+        # one baseline for all three titles, whatever each map's aspect ratio
+        box = ax.get_position()
+        fig.text(
+            (box.x0 + box.x1) / 2,
+            0.97,
+            f"{title}: {s.upper} colors",
+            ha="center",
+            fontsize=13,
+            fontweight="bold",
         )
+        print(f"    {name}: chi = {s.upper}, proven: {s.exact}")
     save(fig, "maps.png")
-
-
-GREATER_SANTIAGO = (-70.86, -70.47, -33.66, -33.31)
-
-
-def fig_santiago():
-    print("santiago")
-    from matplotlib.patches import Rectangle
-
-    m = maps.load_map("santiago_communes")
-    s = gc.estimate_chromatic_number(m.graph, seed=0)
-    x0, x1, y0, y1 = GREATER_SANTIAGO
-    inside = {
-        r
-        for r, g in m.geometries.items()
-        if x0 <= maps._label_point(g)[0] <= x1 and y0 <= maps._label_point(g)[1] <= y1
-    }
-    fig, (a1, a2) = plt.subplots(1, 2, figsize=(15, 7.5), width_ratios=[1, 1.15])
-    maps.plot_map(
-        m,
-        s.coloring,
-        ax=a1,
-        labels={r: "" for r in inside},
-        min_label_area=0.012,
-        title=f"Santiago Metropolitan Region: {len(m.graph)} communes, {s.upper} colors",
-    )
-    a1.add_patch(
-        Rectangle((x0, y0), x1 - x0, y1 - y0, fill=False, ec=INK, lw=1.2, ls="--", zorder=3)
-    )
-    maps.plot_map(
-        m,
-        s.coloring,
-        ax=a2,
-        labels=maps.SANTIAGO_SHORT_NAMES,
-        extent=GREATER_SANTIAGO,
-        fontsize=6.5,
-        title="Greater Santiago",
-        label_offsets={
-            "San Joaquín": (0.012, 0.0),
-            "San Miguel": (-0.006, 0.0),
-            "La Granja": (0.008, 0.0),
-            "San Ramón": (-0.004, -0.004),
-        },
-    )
-    save(fig, "santiago.png")
-    print(f"    chi = {s.upper}, proven: {s.exact}")
 
 
 def fig_map_gif():
@@ -416,7 +385,6 @@ FIGURES = {
     "trace": fig_trace,
     "phase": fig_phase_transition,
     "maps": fig_maps,
-    "santiago": fig_santiago,
     "gif": fig_map_gif,
     "sudoku": fig_sudoku,
     "frequency": fig_frequency,

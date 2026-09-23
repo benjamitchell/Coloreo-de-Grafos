@@ -174,23 +174,21 @@ colors always suffice. The borders are computed from official polygons
 regions, the [Biblioteca del Congreso Nacional](https://www.bcn.cl) for
 communes) by [`scripts/build_map_data.py`](scripts/build_map_data.py).
 
-<p align="center"><img src="docs/figures/santiago.png" alt="The 52 communes of the Santiago Metropolitan Region colored with 4 colors, with a zoom on Greater Santiago"></p>
-
-**The 52 communes of the Santiago Metropolitan Region need 4 colors**, and
-this is proven, not just observed: the map has no four mutually adjacent
-communes, but **Calera de Tango** is surrounded by the 5-cycle Maipú,
-Padre Hurtado, Peñaflor, Talagante, San Bernardo. Its neighbours alone
-need 3 colors (an odd cycle) and it must differ from all of them. The exact
-search confirms that no 3-coloring exists.
-
-<p align="center"><img src="docs/figures/maps.png" width="640" alt="South America colored with 4 colors and the regions of Chile with 3"></p>
+<p align="center"><img src="docs/figures/maps.png" alt="South America colored with 4 colors, the regions of Chile with 3, and the 52 communes of the Santiago Metropolitan Region with 4"></p>
 
 * **South America needs 4 colors**: Argentina, Bolivia, Brazil and Paraguay
   all border each other (a $K_4$).
 * **Chile's 16 regions need only 3**: the regions form a path, except for
   the triangle Valparaíso, Metropolitana, O'Higgins.
-* The 48 contiguous **US states** are also included (4 colors: Nevada sits
-  inside a 5-cycle, just like Calera de Tango).
+* **The 52 communes of the Santiago Metropolitan Region need 4**, and this
+  is proven, not just observed. No four communes are mutually adjacent, but
+  **Calera de Tango** is surrounded by the 5-cycle Maipú, Padre Hurtado,
+  Peñaflor, Talagante, San Bernardo: its neighbours alone need 3 colors (an
+  odd cycle), and it must differ from all of them. The exact search confirms
+  that no 3-coloring exists.
+
+The 48 contiguous **US states** are also included in the library (4 colors:
+Nevada sits inside a 5-cycle, just like Calera de Tango).
 
 ### Radio frequency assignment
 
