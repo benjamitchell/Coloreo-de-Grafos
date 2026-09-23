@@ -17,6 +17,16 @@ from a script in this repository.
   <img src="docs/figures/santiago_annealing.gif" alt="Simulated annealing 4-coloring the 52 communes of the Santiago Metropolitan Region; conflicts shown as red lines disappear as the temperature drops" width="520">
 </p>
 
+## Try it live
+
+**[Coloring by Cooling](https://benjamitchell.github.io/Coloreo-de-Grafos/)** runs the
+same algorithms in your browser: watch annealing color the communes of Santiago (or
+South America, Chile, the US, or any GeoJSON you upload) and solve any Sudoku you type
+in, with the temperature and $H(x)$ updating live. Try $k = 3$ on Santiago to watch it
+get stuck, exactly as the proof below predicts. The site lives in [`web/`](web/) and is
+deployed by GitHub Actions; preview it locally with
+`python scripts/build_web.py && python -m http.server -d _site`.
+
 ## The problem
 
 Given a graph $G = (V, E)$ and $k$ colors, find $x : V \to \{1, \dots, k\}$
@@ -247,6 +257,7 @@ src/graph_coloring/
     benchmarks.py    DIMACS queen and Mycielski graphs
     apps/            sudoku, maps (+ data), frequency, timetabling
 scripts/             map data builder, figure generator
+web/                 the interactive demo (plain HTML, CSS and JavaScript)
 tests/               pytest suite (run in CI on Python 3.10–3.12)
 legacy/              the original 2022 notebook
 ```
