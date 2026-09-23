@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/benjamitchell/Coloreo-de-Grafos/actions/workflows/ci.yml/badge.svg)](https://github.com/benjamitchell/Coloreo-de-Grafos/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 A small, tested Python library that colors graphs with **simulated annealing**,
 compares it against classical heuristics and bounds on the chromatic number,
@@ -273,3 +274,8 @@ Regenerate every figure and the benchmark table with
 * R. Mulet, A. Pagnani, M. Weigt, R. Zecchina. *Coloring random graphs*. Physical Review Letters, 2002.
 * M. W. Carter, G. Laporte, S. Y. Lee. *Examination timetabling: algorithmic strategies and applications*. JORS, 1996.
 * K. Appel, W. Haken. *Every planar map is four colorable*. Bulletin of the AMS, 1976.
+
+## License
+
+Code under the [MIT License](LICENSE). Map data: Natural Earth (public domain)
+and the Biblioteca del Congreso Nacional de Chile.

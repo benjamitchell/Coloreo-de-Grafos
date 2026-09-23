@@ -7,6 +7,7 @@ name = "graph-coloring"
 version = "1.0.0"
 description = "Graph coloring by simulated annealing, with classical baselines and applications (Sudoku, maps, frequency assignment, timetabling)."
 readme = "README.md"
+license = { text = "MIT" }
 requires-python = ">=3.10"
 authors = [{ name = "benjamitchell" }]
 dependencies = ["networkx>=3.0", "numpy>=1.24", "matplotlib>=3.7"]
