@@ -1,6 +1,6 @@
 # Graph Coloring by Simulated Annealing
 
-[![CI](https://github.com/benjamitchell/Coloreo-de-Grafos/actions/workflows/ci.yml/badge.svg)](https://github.com/benjamitchell/Coloreo-de-Grafos/actions/workflows/ci.yml)
+[![CI](https://github.com/benjamitchell/graph-coloring-annealing/actions/workflows/ci.yml/badge.svg)](https://github.com/benjamitchell/graph-coloring-annealing/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -20,7 +20,7 @@ from a script in this repository.
 
 ## Try it live
 
-**[Coloring by Cooling](https://benjamitchell.github.io/Coloreo-de-Grafos/)** runs the
+**[Coloring by Cooling](https://benjamitchell.github.io/graph-coloring-annealing/)** runs the
 same algorithms in your browser: watch annealing color the communes of Santiago (or
 South America, Chile, the US, or any GeoJSON you upload) and solve any Sudoku you type
 in, with the temperature and $H(x)$ updating live. Try $k = 3$ on Santiago to watch it
